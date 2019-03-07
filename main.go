@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"os"
 )
 
 // Hop-by-hop headers. These are removed when sent to the backend.
@@ -89,7 +88,7 @@ func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	var addr = flag.String("addr", ":" + os.Getenv("PORT"), "The addr of the application.")
+	var addr = flag.String("addr", ":80", "The addr of the application.")
 	flag.Parse()
 
 	handler := &proxy{}
