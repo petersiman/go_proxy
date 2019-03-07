@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"os"
 )
 
 // Hop-by-hop headers. These are removed when sent to the backend.
