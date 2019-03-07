@@ -1,12 +1,13 @@
 package main
 
 import (
-	"flag"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"strings"
+	"os"
+	"fmt"
 )
 
 // Hop-by-hop headers. These are removed when sent to the backend.
@@ -87,14 +88,24 @@ func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	io.Copy(wr, resp.Body)
 }
 
+func determineListenAddress() (string, error) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		return "", fmt.Errorf("$PORT not set")
+	}
+	return ":" + port, nil
+}
+
 func main() {
-	var addr = flag.String("addr", ":80", "The addr of the application.")
-	flag.Parse()
+	addr, err := determineListenAddress()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	handler := &proxy{}
 
-	log.Println("Starting proxy server on", *addr)
-	if err := http.ListenAndServe(*addr, handler); err != nil {
+	log.Println("Starting proxy server on", addr)
+	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }
