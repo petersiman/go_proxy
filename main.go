@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"regexp"
+	"fmt"
 )
 
 // Hop-by-hop headers. These are removed when sent to the backend.
@@ -49,7 +51,11 @@ type proxy struct {
 }
 
 func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
-	log.Println(req.RemoteAddr, " ", req.Method, " ", req.URL)
+	var headers string
+	for k,v := range req.Header {
+		headers =  headers + "," + k + " : " + strings.Join(v, ",")
+	}
+	log.Print(req.RemoteAddr, " ", req.Method, " ", req.URL, " Headers: ", headers)
 
 	if req.URL.Scheme != "http" && req.URL.Scheme != "https" {
 	  	msg := "unsupported protocal scheme "+req.URL.Scheme
@@ -58,6 +64,41 @@ func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	//Return 404 if Auth header
+	if req.Header.Get("WWW-Authenticate") != "" || req.Header.Get("Authorization") != "" || req.Header.Get("WWW-Authenticate") != "" || req.Header.Get("Proxy-Authorization") != "" {
+		http.Error(wr, "", http.StatusNotFound)
+		log.Println("found authentication header")
+		return
+	}
+
+	if req.Method == "HEAD" {
+		wr.WriteHeader(http.StatusOK)
+		log.Println("HEAD request - returning OK")
+		return
+	}
+
+	//Return 404 if CONNECT
+	if req.Method == "CONNECT" {
+		http.Error(wr, "", http.StatusNotFound)
+		log.Println("CONNECT request - returning 404")
+		return
+	}
+
+	match, _ := regexp.MatchString("(http(s?):)([/|.|\\w|\\s|-])*\\.(?:jpg|gif|png)", req.URL.String())
+
+	if match {
+		wr.WriteHeader(http.StatusOK)
+		log.Println("Image request")
+		return
+	}
+
+	wr.WriteHeader(http.StatusOK)
+	emptyHtml := "<html></html>"
+	fmt.Fprint(wr, emptyHtml)
+	fmt.Println("Returning empty HTML")
+	return
+
+	// Actual proxying - should never happen --->
 	client := &http.Client{}
 
 	//http: Request.RequestURI can't be set in client requests.
