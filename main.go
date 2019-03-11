@@ -6,8 +6,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"os"
-	"fmt"
 )
 
 // Hop-by-hop headers. These are removed when sent to the backend.
@@ -88,19 +86,8 @@ func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	io.Copy(wr, resp.Body)
 }
 
-func determineListenAddress() (string, error) {
-	port := os.Getenv("PORT")
-	if port == "" {
-		return "", fmt.Errorf("$PORT not set")
-	}
-	return ":" + port, nil
-}
-
 func main() {
-	addr, err := determineListenAddress()
-	if err != nil {
-		log.Fatal(err)
-	}
+	addr := ":8181"
 
 	handler := &proxy{}
 
