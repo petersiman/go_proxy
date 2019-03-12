@@ -8,6 +8,8 @@ import (
 	"strings"
 	"regexp"
 	"fmt"
+	"flag"
+	"os"
 )
 
 // Hop-by-hop headers. These are removed when sent to the backend.
@@ -95,7 +97,7 @@ func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	wr.WriteHeader(http.StatusOK)
 	emptyHtml := "<html></html>"
 	fmt.Fprint(wr, emptyHtml)
-	fmt.Println("Returning empty HTML")
+	log.Println("Returning empty HTML")
 	return
 
 	// Actual proxying - should never happen --->
@@ -127,12 +129,33 @@ func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	io.Copy(wr, resp.Body)
 }
 
+func openLogFile(path string) {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Logging to a file %s \n", file.Name())
+
+	defer file.Close()
+
+	log.SetOutput(file)
+}
+
 func main() {
+	path := flag.String("logPath", "", "Log file path (Required)")
+	flag.Parse()
+
+	if *path == "" {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	openLogFile(*path)
 	addr := ":8181"
 
 	handler := &proxy{}
 
-	log.Println("Starting proxy server on", addr)
+	log.Print("Starting proxy server on", addr)
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
