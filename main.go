@@ -130,7 +130,7 @@ func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 }
 
 func openLogFile(path string) {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile(path, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0664)
 	if err != nil {
 		log.Fatal(err)
 	}
