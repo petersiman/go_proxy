@@ -129,16 +129,15 @@ func (p *proxy) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	io.Copy(wr, resp.Body)
 }
 
-func openLogFile(path string) {
+func openLogFile(path string) *os.File{
 	file, err := os.OpenFile(path, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0664)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Logging to a file %s \n", file.Name())
 
-	defer file.Close()
-
 	log.SetOutput(file)
+	return file
 }
 
 func main() {
@@ -150,7 +149,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	openLogFile(*path)
+	file := openLogFile(*path)
+	defer file.Close()
+
 	addr := ":8181"
 
 	handler := &proxy{}
